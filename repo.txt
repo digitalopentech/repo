@@ -1,1 +1,77 @@
-1111121211212122121121212
+1. Definir o Esquema (schema.json)
+Crie um arquivo chamado schema.json com o seguinte conteúdo:
+
+json
+Copiar código
+{
+  "schemaName": "exampleSchema",
+  "dimensionFieldSpecs": [
+    {
+      "name": "customerId",
+      "dataType": "STRING"
+    },
+    {
+      "name": "orderId",
+      "dataType": "STRING"
+    }
+  ],
+  "metricFieldSpecs": [
+    {
+      "name": "amount",
+      "dataType": "DOUBLE"
+    }
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "orderDate",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ]
+}
+2. Definir a Configuração da Tabela (tableConfig.json)
+Crie um arquivo chamado tableConfig.json com o seguinte conteúdo:
+
+json
+Copiar código
+{
+  "tableName": "exampleTable_OFFLINE",
+  "tableType": "OFFLINE",
+  "segmentsConfig": {
+    "timeColumnName": "orderDate",
+    "schemaName": "exampleSchema",
+    "replication": "1"
+  },
+  "tenants": {
+    "broker": "DefaultTenant",
+    "server": "DefaultTenant"
+  },
+  "tableIndexConfig": {
+    "loadMode": "MMAP"
+  },
+  "ingestionConfig": {
+    "batchIngestionConfig": {
+      "segmentIngestionType": "APPEND",
+      "segmentIngestionFrequency": "DAILY"
+    }
+  },
+  "metadata": {}
+}
+3. Submeter o Esquema e a Configuração da Tabela
+Use os comandos do pinot-admin.sh para adicionar o esquema e a configuração da tabela ao Apache Pinot.
+
+Primeiro, adicione o esquema:
+
+sh
+Copiar código
+./pinot-admin.sh AddSchema -schemaFile /caminho/para/schema.json -exec
+Depois, adicione a configuração da tabela:
+
+sh
+Copiar código
+./pinot-admin.sh AddTable -tableConfigFile /caminho/para/tableConfig.json -exec
+Resumo dos Passos
+Crie o arquivo schema.json com a definição do esquema.
+Crie o arquivo tableConfig.json com a configuração da tabela como OFFLINE.
+Submeta o esquema e a configuração da tabela usando os comandos pinot-admin.sh.
