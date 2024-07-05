@@ -1,124 +1,48 @@
-Passos para Criar Tabela e Inserir Dados
-Certifique-se de que o Apache Pinot está em execução.
+Vamos seguir os passos para inserir a tabela de vendas no Apache Pinot.
 
-Verifique se todos os componentes do Pinot (controller, broker, server, e zookeeper) estão rodando.
-Criar o Esquema
-
-Crie um arquivo chamado schema.json com o seguinte conteúdo:
-
-json
-Copiar código
-{
-  "schemaName": "exampleSchema",
-  "dimensionFieldSpecs": [
-    {
-      "name": "customerId",
-      "dataType": "STRING"
-    },
-    {
-      "name": "orderId",
-      "dataType": "STRING"
-    }
-  ],
-  "metricFieldSpecs": [
-    {
-      "name": "amount",
-      "dataType": "DOUBLE"
-    }
-  ],
-  "dateTimeFieldSpecs": [
-    {
-      "name": "orderDate",
-      "dataType": "LONG",
-      "format": "1:MILLISECONDS:EPOCH",
-      "granularity": "1:MILLISECONDS"
-    }
-  ]
-}
-Criar a Configuração da Tabela
-Crie um arquivo chamado tableConfig.json com o seguinte conteúdo:
-
-json
-Copiar código
-{
-  "tableName": "exampleSchema_OFFLINE",
-  "tableType": "OFFLINE",
-  "segmentsConfig": {
-    "timeColumnName": "orderDate",
-    "schemaName": "exampleSchema",
-    "replication": "1"
-  },
-  "tenants": {
-    "broker": "DefaultTenant",
-    "server": "DefaultTenant"
-  },
-  "tableIndexConfig": {
-    "loadMode": "MMAP"
-  },
-  "ingestionConfig": {
-    "batchIngestionConfig": {
-      "segmentIngestionType": "APPEND",
-      "segmentIngestionFrequency": "DAILY"
-    }
-  },
-  "metadata": {}
-}
-Adicionar o Esquema e a Configuração da Tabela via API HTTP
-Use os seguintes comandos curl para adicionar o esquema e a configuração da tabela:
-
-Adicionar o Esquema:
+Passo 1: Inicializar o ambiente do Pinot
+Certifique-se de que os contêineres do Pinot estão em execução. Se não estiverem, inicie-os com o comando:
 
 sh
 Copiar código
-curl -X POST -H "Content-Type: application/json" -d @schema.json "http://localhost:9000/schemas"
-Adicionar a Configuração da Tabela:
-
+docker-compose up -d
+Passo 2: Criar o esquema da tabela
+Faça upload do arquivo sales-schema.json para o Pinot.
 sh
 Copiar código
-curl -X POST -H "Content-Type: application/json" -d @tableConfig.json "http://localhost:9000/tables"
-Ingestão de Dados
-Prepare um arquivo JSON com os dados que você deseja inserir, por exemplo, data.json:
+curl -X POST -H "Content-Type: application/json" -d @/mnt/data/sales-schema.json "http://localhost:9000/schemas"
+Passo 3: Criar a configuração da tabela
+Faça upload do arquivo sales-table.json para o Pinot.
+sh
+Copiar código
+curl -X POST -H "Content-Type: application/json" -d @/mnt/data/sales-table.json "http://localhost:9000/tables"
+Passo 4: Preparar os dados para ingestão
+Você precisa ter os dados que deseja inserir na tabela. Vamos supor que você tenha um arquivo data.json com os seguintes dados:
 
 json
 Copiar código
 [
   {
-    "customerId": "123",
-    "orderId": "abc",
-    "amount": 100.5,
-    "orderDate": 1625011200000
+    "transaction_id": "txn1",
+    "product_id": "prod1",
+    "product_name": "Laptop",
+    "category": "Electronics",
+    "quantity": 2,
+    "price": 1500.0,
+    "sale_date": 1625078400000
   },
   {
-    "customerId": "124",
-    "orderId": "def",
-    "amount": 200.75,
-    "orderDate": 1625097600000
-  },
-  {
-    "customerId": "125",
-    "orderId": "ghi",
-    "amount": 300.25,
-    "orderDate": 1625184000000
+    "transaction_id": "txn2",
+    "product_id": "prod2",
+    "product_name": "Mouse",
+    "category": "Electronics",
+    "quantity": 10,
+    "price": 25.0,
+    "sale_date": 1625164800000
   }
 ]
-Use o comando curl para inserir os dados:
-
+Passo 5: Ingerir os dados
+Faça upload do arquivo de dados data.json para o Pinot. Use a API de ingestão para inserir os dados na tabela.
 sh
 Copiar código
-curl -X POST -H "Content-Type: application/json" -d @data.json "http://localhost:9000/ingestFromFile?tableName=exampleSchema_OFFLINE"
-Verificação Final
-Verifique se os dados foram inseridos corretamente:
-Acesse a interface de consulta do Pinot através do navegador em http://localhost:9000/query e execute a consulta:
-
-sql
-Copiar código
-SELECT * FROM exampleSchema_OFFLINE LIMIT 10
-
-
-curl -X POST -H "Content-Type: application/json" -d @data.json "http://localhost:9000/ingestFromFile?tableName=exampleSchema_OFFLINE&batchConfigMapStr=default.segment.push.frequency=hourly"
-
-curl -X POST -H "Content-Type: application/json" -d @data.json "http://localhost:9000/ingestFromFile?tableName=exampleSchema_OFFLINE&batchConfigMapStr=default.segment.push.frequency=hourly"
-
-curl -X POST -F 'file=@/path/to/data.json' -H "Content-Type: multipart/form-data" "http://localhost:9000/ingestFromFile?tableNameWithType=exampleSchema_OFFLINE&batchConfigMapStr={\"inputFormat\":\"json\"}"
-
-
+curl -X POST "http://localhost:9000/ingestFromURI?tableNameWithType=salesSchema_OFFLINE&batchConfigMapStr=%7B%22inputFormat%22%3A%22json%22%2C%22input.fs.className%22%3A%22org.apache.pinot.plugin.filesystem.LocalPinotFS%22%7D&sourceURIStr=file:///mnt/data/data.json"
