@@ -1,0 +1,79 @@
+version: '3.3'
+services:
+  zookeeper:
+    image: zookeeper:3.6.3
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: "ruok"
+      JVMFLAGS: "-Xmx2g -Xms1g"
+
+  pinot-controller:
+    image: apachepinot/pinot:latest
+    command: "StartController -zkAddress zookeeper:2181"
+    ports:
+      - "9000:9000"
+    depends_on:
+      - zookeeper
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 1g
+
+  pinot-broker:
+    image: apachepinot/pinot:latest
+    command: "StartBroker -zkAddress zookeeper:2181"
+    ports:
+      - "8099:8099"
+    depends_on:
+      - zookeeper
+      - pinot-controller
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 1g
+
+  pinot-server:
+    image: apachepinot/pinot:latest
+    command: "StartServer -zkAddress zookeeper:2181"
+    ports:
+      - "8098:8098"
+    depends_on:
+      - zookeeper
+      - pinot-controller
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 1g
+
+  pinot-minion:
+    image: apachepinot/pinot:latest
+    command: "StartMinion -zkAddress zookeeper:2181"
+    depends_on:
+      - zookeeper
+      - pinot-controller
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 1g
+
+  setup-pinot-cluster:
+    image: apachepinot/pinot:latest
+    command: "QuickStart -type BATCH"
+    depends_on:
+      - zookeeper
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+  
