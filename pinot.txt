@@ -87,3 +87,52 @@ Adicionar a Configuração da Tabela:
 sh
 Copiar código
 curl -X POST -H "Content-Type: application/json" -d @tableConfig.json http://localhost:9000/tables
+###############################
+Passos Detalhados
+Prepare o arquivo CSV (data.csv) com os dados:
+
+csv
+Copiar código
+customerId,orderId,amount,orderDate
+123,abc,100.5,1625011200000
+124,def,200.75,1625097600000
+125,ghi,300.25,1625184000000
+Prepare o arquivo de configuração do segmento (segmentCreationConfig.json):
+
+json
+Copiar código
+{
+  "tableName": "exampleSchema_OFFLINE",
+  "inputFilePath": "/Users/fo100301/Documents/apache-pinot-1.1.0-bin/data/data.csv",
+  "outputDirectory": "/Users/fo100301/Documents/apache-pinot-1.1.0-bin/output",
+  "schemaFile": "/Users/fo100301/Documents/apache-pinot-1.1.0-bin/data/schema.json",
+  "readerConfig": {
+    "format": "csv"
+  },
+  "overwriteOutput": true
+}
+Crie o segmento com o comando correto:
+
+sh
+Copiar código
+./pinot-admin.sh CreateSegment \
+  -dataDir /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data \
+  -format csv \
+  -tableName exampleSchema_OFFLINE \
+  -segmentName exampleSchema_OFFLINE_0 \
+  -schemaFile /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data/schema.json \
+  -outDir /Users/fo100301/Documents/apache-pinot-1.1.0-bin/output \
+  -overwrite
+Verifique o segmento criado:
+
+O segmento criado deve estar no diretório /Users/fo100301/Documents/apache-pinot-1.1.0-bin/output com o nome exampleSchema_OFFLINE_0.tar.gz.
+
+Carregue o segmento no Apache Pinot usando uma solicitação HTTP:
+
+sh
+Copiar código
+curl -X POST -F 'file=@/Users/fo100301/Documents/apache-pinot-1.1.0-bin/output/exampleSchema_OFFLINE_0.tar.gz' "http://localhost:9000/segments?tableName=exampleSchema_OFFLINE"
+Por que usar .tar.gz?
+Compactação: Reduz o tamanho do arquivo para transporte mais eficiente.
+Conveniência: Agrupa todos os arquivos necessários em um único pacote.
+Compatibilidade: O formato .tar.gz é amplamente suportado e fácil de descompactar em diferentes sistemas operacionais.
