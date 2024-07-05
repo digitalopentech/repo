@@ -113,3 +113,6 @@ Acesse a interface de consulta do Pinot através do navegador em http://localhos
 sql
 Copiar código
 SELECT * FROM exampleSchema_OFFLINE LIMIT 10
+
+
+curl -X POST -H "Content-Type: application/json" -d @data.json "http://localhost:9000/ingestFromFile?tableName=exampleSchema_OFFLINE&batchConfigMapStr=default.segment.push.frequency=hourly"
