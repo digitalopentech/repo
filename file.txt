@@ -1,8 +1,16 @@
-----------
+Execute o comando para criar o segmento:
+
+sh
+Copiar código
 ./pinot-admin.sh CreateSegment \
   -dataDir /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data \
   -format CSV \
-  -tableName exampleSchema_OFFLINE \
+  -table exampleSchema_OFFLINE \
   -schemaFile /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data/schema.json \
   -outDir /Users/fo100301/Documents/apache-pinot-1.1.0-bin/output \
   -overwrite
+Carregue o segmento criado usando uma solicitação HTTP:
+
+sh
+Copiar código
+curl -X POST -F 'file=@/Users/fo100301/Documents/apache-pinot-1.1.0-bin/output/exampleSchema_OFFLINE_0.tar.gz' "http://localhost:9000/segments?tableName=exampleSchema_OFFLINE"
