@@ -136,3 +136,5 @@ Por que usar .tar.gz?
 Compactação: Reduz o tamanho do arquivo para transporte mais eficiente.
 Conveniência: Agrupa todos os arquivos necessários em um único pacote.
 Compatibilidade: O formato .tar.gz é amplamente suportado e fácil de descompactar em diferentes sistemas operacionais.
+
+ppppp
