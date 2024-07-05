@@ -1,0 +1,5 @@
+transaction_id,product_id,product_name,category,quantity,price,sale_date
+1,P001,Product1,Category1,2,20.5,1627898400000
+2,P002,Product2,Category2,1,15.0,1627898500000
+3,P003,Product3,Category1,5,50.0,1627898600000
+

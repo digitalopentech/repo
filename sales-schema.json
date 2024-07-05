@@ -1,0 +1,40 @@
+{
+  "schemaName": "salesSchema",
+  "dimensionFieldSpecs": [
+    {
+      "name": "transaction_id",
+      "dataType": "STRING"
+    },
+    {
+      "name": "product_id",
+      "dataType": "STRING"
+    },
+    {
+      "name": "product_name",
+      "dataType": "STRING"
+    },
+    {
+      "name": "category",
+      "dataType": "STRING"
+    }
+  ],
+  "metricFieldSpecs": [
+    {
+      "name": "quantity",
+      "dataType": "INT"
+    },
+    {
+      "name": "price",
+      "dataType": "FLOAT"
+    }
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "sale_date",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ]
+}
+

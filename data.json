@@ -1,0 +1,21 @@
+[
+    {
+        "transaction_id": "txn1",
+        "product_id": "prod1",
+        "product_name": "Laptop",
+        "category": "Electronics",
+        "quantity": 2,
+        "price": 1500.0,
+        "sale_date": 1625078400000
+    },
+    {
+        "transaction_id": "txn2",
+        "product_id": "prod2",
+        "product_name": "Mouse",
+        "category": "Electronics",
+        "quantity": 10,
+        "price": 25.0,
+        "sale_date": 1625164800000
+    }
+]
+
