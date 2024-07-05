@@ -75,3 +75,15 @@ Resumo dos Passos
 Crie o arquivo schema.json com a definição do esquema.
 Crie o arquivo tableConfig.json com a configuração da tabela como OFFLINE.
 Submeta o esquema e a configuração da tabela usando os comandos pinot-admin.sh.
+
+
+Adicionar o Esquema:
+
+sh
+Copiar código
+curl -X POST -H "Content-Type: application/json" -d @schema.json http://localhost:9000/schemas
+Adicionar a Configuração da Tabela:
+
+sh
+Copiar código
+curl -X POST -H "Content-Type: application/json" -d @tableConfig.json http://localhost:9000/tables
