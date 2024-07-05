@@ -119,3 +119,6 @@ curl -X POST -H "Content-Type: application/json" -d @data.json "http://localhost
 
 curl -X POST -H "Content-Type: application/json" -d @data.json "http://localhost:9000/ingestFromFile?tableName=exampleSchema_OFFLINE&batchConfigMapStr=default.segment.push.frequency=hourly"
 
+curl -X POST -F 'file=@/path/to/data.json' -H "Content-Type: multipart/form-data" "http://localhost:9000/ingestFromFile?tableNameWithType=exampleSchema_OFFLINE&batchConfigMapStr={\"inputFormat\":\"json\"}"
+
+
