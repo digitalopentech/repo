@@ -1,7 +1,11 @@
-Vamos criar uma tabela no Apache Pinot 1.1 e inserir dados nela, passo a passo, sendo o mais didático possível.
+Passos para Criar Tabela e Inserir Dados
+Certifique-se de que o Apache Pinot está em execução.
 
-Passo 1: Preparar o Esquema
-Crie o arquivo schema.json com a definição do esquema. Este arquivo define a estrutura dos dados.
+Verifique se todos os componentes do Pinot (controller, broker, server, e zookeeper) estão rodando.
+Criar o Esquema
+
+Crie um arquivo chamado schema.json com o seguinte conteúdo:
+
 json
 Copiar código
 {
@@ -31,10 +35,9 @@ Copiar código
     }
   ]
 }
-Salve este arquivo como schema.json no diretório /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data.
+Criar a Configuração da Tabela
+Crie um arquivo chamado tableConfig.json com o seguinte conteúdo:
 
-Passo 2: Preparar a Configuração da Tabela
-Crie o arquivo tableConfig.json com a configuração da tabela. Este arquivo define como os dados serão ingeridos e armazenados.
 json
 Copiar código
 {
@@ -60,73 +63,53 @@ Copiar código
   },
   "metadata": {}
 }
-Salve este arquivo como tableConfig.json no mesmo diretório.
+Adicionar o Esquema e a Configuração da Tabela via API HTTP
+Use os seguintes comandos curl para adicionar o esquema e a configuração da tabela:
 
-Passo 3: Adicionar o Esquema e a Configuração da Tabela
-Adicionar o Esquema ao Pinot:
-Execute o comando abaixo para adicionar o esquema ao controlador do Pinot:
-sh
-Copiar código
-./pinot-admin.sh AddSchema -schemaFile /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data/schema.json -controllerHost localhost -controllerPort 9000 -exec
-Adicionar a Configuração da Tabela ao Pinot:
-Execute o comando abaixo para adicionar a configuração da tabela:
-sh
-Copiar código
-./pinot-admin.sh AddTable -tableConfigFile /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data/tableConfig.json -controllerHost localhost -controllerPort 9000 -exec
-Passo 4: Preparar os Dados
-Crie um arquivo CSV com os dados. Este arquivo será usado para criar segmentos de dados.
-Crie um arquivo chamado data.csv com o seguinte conteúdo:
+Adicionar o Esquema:
 
-csv
+sh
 Copiar código
-customerId,orderId,amount,orderDate
-123,abc,100.5,1625011200000
-124,def,200.75,1625097600000
-125,ghi,300.25,1625184000000
-Salve este arquivo no diretório /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data.
+curl -X POST -H "Content-Type: application/json" -d @schema.json "http://localhost:9000/schemas"
+Adicionar a Configuração da Tabela:
 
-Passo 5: Criar o Segmento
-Criar o Segmento a partir do Arquivo CSV:
-Use o comando abaixo para criar um segmento de dados:
 sh
 Copiar código
-./pinot-admin.sh CreateSegment \
-  -dataDir /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data \
-  -format CSV \
-  -outDir /Users/fo100301/Documents/apache-pinot-1.1.0-bin/output \
-  -tableConfigFile /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data/tableConfig.json \
-  -schemaFile /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data/schema.json \
-  -overwrite
-Este comando criará um segmento no diretório /Users/fo100301/Documents/apache-pinot-1.1.0-bin/output.
+curl -X POST -H "Content-Type: application/json" -d @tableConfig.json "http://localhost:9000/tables"
+Ingestão de Dados
+Prepare um arquivo JSON com os dados que você deseja inserir, por exemplo, data.json:
 
-Passo 6: Carregar o Segmento
-Compactar o Segmento Criado:
-Navegue até o diretório onde o segmento foi criado e compacte-o em um arquivo .tar.gz:
+json
+Copiar código
+[
+  {
+    "customerId": "123",
+    "orderId": "abc",
+    "amount": 100.5,
+    "orderDate": 1625011200000
+  },
+  {
+    "customerId": "124",
+    "orderId": "def",
+    "amount": 200.75,
+    "orderDate": 1625097600000
+  },
+  {
+    "customerId": "125",
+    "orderId": "ghi",
+    "amount": 300.25,
+    "orderDate": 1625184000000
+  }
+]
+Use o comando curl para inserir os dados:
+
 sh
 Copiar código
-cd /Users/fo100301/Documents/apache-pinot-1.1.0-bin/output
-tar -czvf exampleSchema_OFFLINE_0.tar.gz exampleSchema_OFFLINE_0
-Carregar o Segmento no Pinot:
-Use o comando abaixo para carregar o segmento no Apache Pinot:
-sh
-Copiar código
-curl -X POST -F 'file=@/Users/fo100301/Documents/apache-pinot-1.1.0-bin/output/exampleSchema_OFFLINE_0.tar.gz' "http://localhost:9000/segments?tableName=exampleSchema_OFFLINE"
-Passo 7: Verificar os Dados
-Verificar se o Segmento foi Carregado:
-Liste os segmentos carregados na tabela para verificar se o segmento foi carregado corretamente:
-sh
-Copiar código
-curl "http://localhost:9000/tables/exampleSchema_OFFLINE/segments"
-Consultar os Dados:
-Use a interface de consulta do Pinot ou um cliente SQL compatível para consultar os dados e verificar se foram carregados corretamente. Você pode acessar a interface de consulta do Pinot em http://localhost:9000/query e executar a seguinte consulta:
+curl -X POST -H "Content-Type: application/json" -d @data.json "http://localhost:9000/ingestFromFile?tableName=exampleSchema_OFFLINE"
+Verificação Final
+Verifique se os dados foram inseridos corretamente:
+Acesse a interface de consulta do Pinot através do navegador em http://localhost:9000/query e execute a consulta:
+
 sql
 Copiar código
 SELECT * FROM exampleSchema_OFFLINE LIMIT 10
-Conclusão
-Seguindo esses passos detalhados, você deve ser capaz de criar uma tabela no Apache Pinot 1.1 e inserir dados nela corretamente. Se precisar de mais assistência, estou à disposição para ajudar!
-
-
-
-
-
-
