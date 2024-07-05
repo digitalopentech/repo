@@ -1,8 +1,8 @@
+----------
 ./pinot-admin.sh CreateSegment \
   -dataDir /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data \
   -format CSV \
   -tableName exampleSchema_OFFLINE \
-  -segmentName exampleSchema_OFFLINE_0 \
   -schemaFile /Users/fo100301/Documents/apache-pinot-1.1.0-bin/data/schema.json \
   -outDir /Users/fo100301/Documents/apache-pinot-1.1.0-bin/output \
   -overwrite
