@@ -1,0 +1,125 @@
+Vamos criar uma tabela offline no Apache Pinot 1.1 e inserir dados nela passo a passo.
+
+1. Preparar os Arquivos de Configuração e Dados
+Criar o Esquema
+Crie um arquivo chamado schema.json com o seguinte conteúdo:
+
+json
+Copiar código
+{
+  "schemaName": "exampleSchema",
+  "dimensionFieldSpecs": [
+    {
+      "name": "customerId",
+      "dataType": "STRING"
+    },
+    {
+      "name": "orderId",
+      "dataType": "STRING"
+    }
+  ],
+  "metricFieldSpecs": [
+    {
+      "name": "amount",
+      "dataType": "DOUBLE"
+    }
+  ],
+  "dateTimeFieldSpecs": [
+    {
+      "name": "orderDate",
+      "dataType": "LONG",
+      "format": "1:MILLISECONDS:EPOCH",
+      "granularity": "1:MILLISECONDS"
+    }
+  ]
+}
+Criar a Configuração da Tabela
+Crie um arquivo chamado tableConfig.json com o seguinte conteúdo:
+
+json
+Copiar código
+{
+  "tableName": "exampleTable_OFFLINE",
+  "tableType": "OFFLINE",
+  "segmentsConfig": {
+    "timeColumnName": "orderDate",
+    "schemaName": "exampleSchema",
+    "replication": "1"
+  },
+  "tenants": {
+    "broker": "DefaultTenant",
+    "server": "DefaultTenant"
+  },
+  "tableIndexConfig": {
+    "loadMode": "MMAP"
+  },
+  "ingestionConfig": {
+    "batchIngestionConfig": {
+      "segmentIngestionType": "APPEND",
+      "segmentIngestionFrequency": "DAILY"
+    }
+  },
+  "metadata": {}
+}
+Criar o Arquivo CSV com os Dados
+Crie um arquivo chamado data.csv com o seguinte conteúdo:
+
+csv
+Copiar código
+customerId,orderId,amount,orderDate
+123,abc,100.5,1625011200000
+124,def,200.75,1625097600000
+125,ghi,300.25,1625184000000
+2. Submeter o Esquema e a Configuração da Tabela
+Use os comandos do pinot-admin.sh para adicionar o esquema e a configuração da tabela ao Apache Pinot.
+
+Adicionar o Esquema
+sh
+Copiar código
+./pinot-admin.sh AddSchema -schemaFile /path/to/schema.json -controllerHost localhost -controllerPort 9000 -exec
+Adicionar a Configuração da Tabela
+sh
+Copiar código
+./pinot-admin.sh AddTable -tableConfigFile /path/to/tableConfig.json -controllerHost localhost -controllerPort 9000 -exec
+3. Criar e Carregar o Segmento
+Use o comando CreateSegment para criar um segmento a partir do arquivo CSV.
+
+sh
+Copiar código
+./pinot-admin.sh CreateSegment \
+  -dataDir /path/to/data \
+  -format CSV \
+  -outDir /path/to/output \
+  -tableConfigFile /path/to/tableConfig.json \
+  -schemaFile /path/to/schema.json \
+  -overwrite
+Certifique-se de que data.csv está no diretório especificado em -dataDir.
+
+4. Carregar o Segmento no Apache Pinot
+Depois de criar o segmento, carregue-o no Apache Pinot usando uma solicitação HTTP.
+
+sh
+Copiar código
+curl -X POST -F 'file=@/path/to/output/exampleTable_OFFLINE_0.tar.gz' "http://localhost:9000/segments?tableName=exampleTable_OFFLINE"
+5. Verificar os Dados
+Finalmente, use a interface de consulta do Pinot para verificar se os dados foram carregados corretamente.
+
+Usando a Interface de Consulta do Pinot
+Acesse http://localhost:9000/query no navegador e execute a seguinte consulta SQL:
+
+sql
+Copiar código
+SELECT * FROM exampleTable_OFFLINE LIMIT 10
+Resumo
+**Criar arquivos de configuração (schema.json, tableConfig.json) e o arquivo CSV (data.csv).
+**Adicionar o esquema e a configuração da tabela ao Apache Pinot usando comandos do pinot-admin.sh.
+**Criar o segmento a partir do arquivo CSV.
+**Carregar o segmento no Apache Pinot usando uma solicitação HTTP.
+**Verificar os dados usando a interface de consulta do Pinot.
+Certifique-se de substituir /path/to/ pelos caminhos reais no seu sistema. Se encontrar algum problema ou precisar de mais assistência, sinta-se à vontade para pedir ajuda!
+
+
+
+
+
+
