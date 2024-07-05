@@ -1,0 +1,73 @@
+1. Preparar os Dados
+Primeiro, crie um arquivo CSV com os dados que você deseja inserir. Por exemplo, crie um arquivo chamado data.csv com o seguinte conteúdo:
+
+csv
+Copiar código
+customerId,orderId,amount,orderDate
+123,abc,100.5,1625011200000
+124,def,200.75,1625097600000
+125,ghi,300.25,1625184000000
+2. Criar um Segmento
+Para criar um segmento a partir do arquivo CSV, você pode usar a ferramenta segmentCreation do Pinot. Crie um arquivo de configuração de segmento chamado segmentCreationConfig.json:
+
+json
+Copiar código
+{
+  "tableName": "exampleSchema_OFFLINE",
+  "inputFilePath": "/path/to/data.csv",
+  "outputDirectory": "/path/to/output",
+  "schemaFile": "/path/to/schema.json",
+  "readerConfig": {
+    "format": "csv",
+    "reader.class.name": "org.apache.pinot.plugin.inputformat.csv.CSVRecordReader"
+  },
+  "overwriteOutput": true
+}
+Execute o comando para criar o segmento:
+
+sh
+Copiar código
+./pinot-admin.sh CreateSegment -configFile /path/to/segmentCreationConfig.json
+Isso criará um segmento no diretório /path/to/output.
+
+3. Carregar o Segmento via HTTP
+Depois de criar o segmento, você pode carregá-lo no Apache Pinot usando uma solicitação HTTP. Supondo que o segmento criado esteja em /path/to/output/exampleSchema_OFFLINE_0.tar.gz, use o seguinte comando curl:
+
+sh
+Copiar código
+curl -X POST -F 'file=@/path/to/output/exampleSchema_OFFLINE_0.tar.gz' "http://localhost:9000/segments?tableName=exampleSchema_OFFLINE"
+Passos Detalhados
+Crie o arquivo CSV (data.csv) com os dados:
+
+csv
+Copiar código
+customerId,orderId,amount,orderDate
+123,abc,100.5,1625011200000
+124,def,200.75,1625097600000
+125,ghi,300.25,1625184000000
+Crie o arquivo de configuração do segmento (segmentCreationConfig.json):
+
+json
+Copiar código
+{
+  "tableName": "exampleSchema_OFFLINE",
+  "inputFilePath": "/path/to/data.csv",
+  "outputDirectory": "/path/to/output",
+  "schemaFile": "/path/to/schema.json",
+  "readerConfig": {
+    "format": "csv",
+    "reader.class.name": "org.apache.pinot.plugin.inputformat.csv.CSVRecordReader"
+  },
+  "overwriteOutput": true
+}
+Execute o comando para criar o segmento:
+
+sh
+Copiar código
+./pinot-admin.sh CreateSegment -configFile /path/to/segmentCreationConfig.json
+Carregue o segmento criado usando uma solicitação HTTP:
+
+sh
+Copiar código
+curl -X POST -F 'file=@/path/to/output/exampleSchema_OFFLINE_0.tar.gz' "http://localhost:9000/segments?tableName=exampleSchema_OFFLINE"
+Certifique-se de substituir /path/to/data.csv, /path/to/output, e /path/to/schema.json pelos caminhos corretos no seu sistema.
