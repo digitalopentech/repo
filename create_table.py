@@ -107,3 +107,40 @@ class TableCreator:
             logger.error(f"{topic_name}: {ex} Stopping...", exc_info=True)
             StateSaver.save_state(topic_name, TypeState.ERROR, f"{topic_name}: {ex} Stopping...")
             sys.exit(1)
+
+
+from src.main import SegmentConverter, TableCreator, ConvertSegmentsParquetParams, CreateTableParams
+
+def main():
+    # Testando SegmentConverter
+    jar_path = "/path/to/jar"
+    segment_converter = SegmentConverter(jar_path)
+    
+    # Testar conversão de segmentos para uma tabela de exemplo
+    try:
+        segment_converter.convert('test_table')
+        print("Segment conversion successful.")
+    except Exception as e:
+        print(f"Segment conversion failed: {e}")
+
+    # Testando TableCreator
+    table_creator = TableCreator()
+    
+    # Criar parâmetros de teste para criar uma tabela
+    create_table_params = CreateTableParams(
+        TABLE='test_table',
+        DOMAIN='test_domain',
+        MODULE='test_module',
+        KAFKA_SCHEMAREGISTRY_TOPIC='test_topic',
+        CUSTOM_SCHEMA_MODEL_FILE='schema_model_file'
+    )
+
+    # Testar criação de tabela
+    try:
+        table_creator.create_table(create_table_params)
+        print("Table creation successful.")
+    except Exception as e:
+        print(f"Table creation failed: {e}")
+
+if __name__ == "__main__":
+    main()
