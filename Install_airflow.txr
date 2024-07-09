@@ -1,0 +1,66 @@
+Para instalar o Apache Airflow no seu Mac, siga os passos abaixo:
+
+1. **Pré-requisitos:**
+   Certifique-se de ter `Python` e `pip` instalados. Você pode verificar se eles estão instalados com os seguintes comandos:
+   ```bash
+   python3 --version
+   pip3 --version
+   ```
+
+   Se não estiverem instalados, você pode instalar o `Python` a partir do [site oficial](https://www.python.org/downloads/) e o `pip` será instalado automaticamente com ele.
+
+2. **Instalar e configurar o virtualenv:**
+   É uma boa prática criar um ambiente virtual para isolar as dependências do Airflow. Instale o `virtualenv` se ainda não tiver:
+   ```bash
+   pip3 install virtualenv
+   ```
+
+   Crie e ative um ambiente virtual:
+   ```bash
+   python3 -m venv airflow_env
+   source airflow_env/bin/activate
+   ```
+
+3. **Instalar o Apache Airflow:**
+   Defina algumas variáveis de ambiente necessárias para a instalação:
+   ```bash
+   export AIRFLOW_HOME=~/airflow
+   export SLUGIFY_USES_TEXT_UNIDECODE=yes
+   ```
+
+   Instale o Apache Airflow usando `pip`:
+   ```bash
+   pip install "apache-airflow[celery]==2.4.3" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.4.3/constraints-3.8.txt"
+   ```
+
+4. **Inicializar o banco de dados do Airflow:**
+   Após a instalação, você precisará inicializar o banco de dados do Airflow:
+   ```bash
+   airflow db init
+   ```
+
+5. **Criar um usuário administrador:**
+   Crie um usuário administrador para acessar a interface web do Airflow:
+   ```bash
+   airflow users create \
+       --username admin \
+       --firstname YourName \
+       --lastname YourSurname \
+       --role Admin \
+       --email admin@example.com
+   ```
+
+6. **Iniciar o servidor web do Airflow e o scheduler:**
+   Inicie o servidor web do Airflow:
+   ```bash
+   airflow webserver --port 8080
+   ```
+
+   Em outro terminal, inicie o scheduler do Airflow:
+   ```bash
+   airflow scheduler
+   ```
+
+Agora, você pode acessar a interface web do Airflow no seu navegador, em `http://localhost:8080`, usando as credenciais que você criou.
+
+Isso deve configurar e iniciar o Apache Airflow no seu Mac.
