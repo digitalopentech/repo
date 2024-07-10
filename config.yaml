@@ -1,20 +1,39 @@
-type: python
-sources:
-  - name: raw
-    format: delta
-    path: s3://{{ env }}-{{ account }}-{{ region }}-raw/{{ kafka_url }}/{{ table }}/
+version: '1.0'
+environment: 
+  ENV: prd
+  ENV_UPPER: PRD
+  ACCOUNT: '81212'
+  REGION: sa-east-1
+  TOPIC_URL: kafka://broker:9092
+  INSTANCE: instance_name
+  REFERENCE_DATE: '{{ ds }}'
 
-sinks:
-  - name: curated
-    format: delta
-    path: s3://{{ env }}-{{ account }}-{{ region }}-curated/{{ kafka_url }}/{{ table }}/
-    partition_by:
-      - dt
-    catalog_engine: trino
-    database: marketing_curated
-    table_name: {{ table }}
-    drop_catalog_table: True
+jobs:
+  convert_segments:
+    type: dede_spark
+    spark_conf:
+      spark.sql.sources.partitionOverwriteMode: dynamic
+      spark.databricks.delta.schema.autoMerge.enabled: true
+      spark.databricks.delta.optimizeWrite.enabled: true
+      spark.sql.session.timeZone: UTC
+    steps:
+      - step_id: convert_segments_parquet
+        class: ConvertSegmentsParquet
+        jar_path: /path/to/jar
+        parameters:
+          TABLE: table_name
+          S3_PATH: s3://bucket/path
+          OUTPUT_DIR: /output/path
 
-custom:
-  table: {{ table }}
-  jar_path: {{ jar_path }}
+tasks:
+  create_table:
+    type: dede_python
+    script: create_table.py
+    parameters:
+      TABLE: table_name
+      KAFKA_REQUIRED_FIELDS: ['field1', 'field2']
+      MODULE: module_name
+      DOMAIN: domain_name
+      CUSTOM_SCHEMA_MODEL_FILE: /path/to/schema/model
+      CUSTOM_TABLE_CONFIG_FILE: /path/to/table/config
+      KAFKA_SCHEMREGISTRY_TOPIC: kafka_topic
