@@ -1,0 +1,20 @@
+type: python
+sources:
+  - name: raw
+    format: delta
+    path: s3://{{ env }}-{{ account }}-{{ region }}-raw/{{ kafka_url }}/{{ table }}/
+
+sinks:
+  - name: curated
+    format: delta
+    path: s3://{{ env }}-{{ account }}-{{ region }}-curated/{{ kafka_url }}/{{ table }}/
+    partition_by:
+      - dt
+    catalog_engine: trino
+    database: marketing_curated
+    table_name: {{ table }}
+    drop_catalog_table: True
+
+custom:
+  table: {{ table }}
+  jar_path: {{ jar_path }}
