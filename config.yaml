@@ -1,39 +1,51 @@
-version: '1.0'
-environment: 
-  ENV: prd
-  ENV_UPPER: PRD
-  ACCOUNT: '81212'
-  REGION: sa-east-1
-  TOPIC_URL: kafka://broker:9092
-  INSTANCE: instance_name
-  REFERENCE_DATE: '{{ ds }}'
-
 jobs:
-  convert_segments:
-    type: dede_spark
-    spark_conf:
-      spark.sql.sources.partitionOverwriteMode: dynamic
-      spark.databricks.delta.schema.autoMerge.enabled: true
-      spark.databricks.delta.optimizeWrite.enabled: true
-      spark.sql.session.timeZone: UTC
-    steps:
-      - step_id: convert_segments_parquet
-        class: ConvertSegmentsParquet
-        jar_path: /path/to/jar
-        parameters:
-          TABLE: table_name
-          S3_PATH: s3://bucket/path
-          OUTPUT_DIR: /output/path
+  - name: ConvertSegmentsJob
+    class: ConvertSegmentsJob
+    params:
+      job_type: create_table
+      table: your_table_name
+      jar_path: your_jar_path
+      kafka_required_fields: []
+      module: your_module
+      domain: your_domain
+      custom_schema_model_file: your_custom_schema_model_file
+      custom_table_config_file: your_custom_table_config_file
+      kafka_schemaregistry_topic: your_kafka_schemaregistry_topic
+  - name: ConvertSegmentsJob
+    class: ConvertSegmentsJob
+    params:
+      job_type: convert_segments
+      table: your_table_name
+      jar_path: your_jar_path
+  - name: ConvertSegmentsJob
+    class: ConvertSegmentsJob
+    params:
+      job_type: convert_all_segments
+      jar_path: your_jar_path
 
-tasks:
-  create_table:
-    type: dede_python
-    script: create_table.py
-    parameters:
-      TABLE: table_name
-      KAFKA_REQUIRED_FIELDS: ['field1', 'field2']
-      MODULE: module_name
-      DOMAIN: domain_name
-      CUSTOM_SCHEMA_MODEL_FILE: /path/to/schema/model
-      CUSTOM_TABLE_CONFIG_FILE: /path/to/table/config
-      KAFKA_SCHEMREGISTRY_TOPIC: kafka_topic
+dags:
+  - name: convert_segments_dag
+    schedule_interval: "@daily"
+    tasks:
+      - name: create_table
+        job: ConvertSegmentsJob
+        params:
+          job_type: create_table
+          table: your_table_name
+          kafka_required_fields: []
+          module: your_module
+          domain: your_domain
+          custom_schema_model_file: your_custom_schema_model_file
+          custom_table_config_file: your_custom_table_config_file
+          kafka_schemaregistry_topic: your_kafka_schemaregistry_topic
+      - name: convert_segments
+        job: ConvertSegmentsJob
+        params:
+          job_type: convert_segments
+          table: your_table_name
+          jar_path: your_jar_path
+      - name: convert_all_segments
+        job: ConvertSegmentsJob
+        params:
+          job_type: convert_all_segments
+          jar_path: your_jar_path
