@@ -28,6 +28,6 @@ WHERE cco.flContaMigrada = 'S'
     OR
     (cco.ingestionTime > ToDateTime(ago('P4DT5M'), 'yyyy-MM-dd HH:mm:ss') AND cco.ingestionTime <= ToDateTime(ago('P4D'), 'yyyy-MM-dd HH:mm:ss'))
   )
-  AND (cco.movimentoDebito_contaMigrada = 'S' OR cco.movimentoCredito_contaMigrada = 'S')
-  AND cco.movimentoDebito_provisorio = 'N'
-  AND cco.movimentoCredito_provisorio = 'N'
+-- Recebimento de PIX
+-- union
+-- select --erro
