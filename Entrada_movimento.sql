@@ -13,23 +13,44 @@ SELECT
     cc.ingestionTime AS "cc_ingestionTime"
 FROM 
     (
-        SELECT *
+        SELECT 
+            idArchSagaOperation,
+            movimento_valorMovimento,
+            movimento_dataContabil_ts,
+            movimento_dataHoraInclusao_ts,
+            ingestionTime,
+            flContaMigrada,
+            cdColigada,
+            cdAgencia,
+            CAST(nuConta AS BIGINT) AS nuConta
         FROM d2dbanking_core_cco_operacao_bancaria_em_efetivada_old
         WHERE flContaMigrada = 'S'
     ) cco
     LEFT JOIN (
-        SELECT *
+        SELECT 
+            idArchSagaOperation,
+            movimento_valorMovimento,
+            ingestionTime,
+            cdColigada,
+            cdAgencia,
+            CAST(nuConta AS BIGINT) AS nuConta
         FROM d2dbanking_core_eb_operacao_bancaria_em_efetivada_old
     ) eb ON cco.idArchSagaOperation = eb.idArchSagaOperation 
         AND cco.cdColigada = eb.cdColigada
         AND cco.cdAgencia = eb.cdAgencia
-        AND CAST(cco.nuConta AS BIGINT) = CAST(eb.nuConta AS BIGINT)
+        AND cco.nuConta = eb.nuConta
     LEFT JOIN (
-        SELECT *
+        SELECT 
+            idArchSagaOperation,
+            movimento_valorMovimento,
+            ingestionTime,
+            cdColigada,
+            cdAgencia,
+            CAST(nuConta AS BIGINT) AS nuConta
         FROM d2dbanking_core_cc_operacao_bancaria_em_efetivada_old
     ) cc ON cco.idArchSagaOperation = cc.idArchSagaOperation 
         AND cco.cdColigada = cc.cdColigada
         AND cco.cdAgencia = cc.cdAgencia
-        AND CAST(cco.nuConta AS BIGINT) = CAST(cc.nuConta AS BIGINT)
+        AND cco.nuConta = cc.nuConta
 WHERE 
     cco.flContaMigrada = 'S'
