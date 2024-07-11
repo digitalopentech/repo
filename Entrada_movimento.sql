@@ -23,4 +23,4 @@ LEFT JOIN d2dbanking_core_cc_operacao_bancaria_em_efetivada_old cc
   AND cco.cdAgencia = cc.cdAgencia
   AND CAST(cco.nuConta AS BIGINT) = CAST(cc.nuConta AS BIGINT)
 WHERE cco.flContaMigrada = 'S'
-  AND cco.ingestionTime >= CURRENT_TIMESTAMP - INTERVAL '5' MINUTE
+  AND cco.ingestionTime >= (CURRENT_TIMESTAMP() - INTERVAL '5' MINUTE)
