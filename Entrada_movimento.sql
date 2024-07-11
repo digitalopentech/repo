@@ -23,6 +23,4 @@ LEFT JOIN d2dbanking_core_cc_operacao_bancaria_em_efetivada_old cc
     AND cco.cdAgencia = cc.cdAgencia
     AND CAST(cco.nuConta AS BIGINT) = CAST(cc.nuConta AS BIGINT)
 WHERE cco.flContaMigrada = 'S'
-  AND cco.ingestionTime BETWEEN ToDateTime(ago('PT5M'), 'yyyy-MM-dd HH:mm:ss') AND ToDateTime(ago('PT4D'), 'yyyy-MM-dd HH:mm:ss')
-  AND (cco.movimentoDebito_contaMigrada = 'S' OR cco.movimentoCredito_contaMigrada = 'S')
-  AND cco.movimentoDebito_provisorio = 'N'
+  AND cco.ingestionTime BETWEEN ToDateTime(ago('PT5M'), 'yyyy-MM-dd HH:mm:ss') AND ToDateTime(ago('P4D'), 'yyyy-MM-dd HH:mm:ss')
