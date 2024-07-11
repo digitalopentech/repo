@@ -1,4 +1,4 @@
-SELECT
+SELECT 
     'Entrada de Movimento' AS "funcionalidade",
     cco.idArchSagaOperation AS "cco_idArchSagaOperation",
     cco.movimento_valorMovimento AS "cco_movimento_valorMovimento",
@@ -11,7 +11,7 @@ SELECT
     cco.ingestionTime AS "cco_ingestionTime",
     eb.ingestionTime AS "eb_ingestionTime",
     cc.ingestionTime AS "cc_ingestionTime"
-FROM
+FROM 
     (
         SELECT *
         FROM d2dbanking_core_cco_operacao_bancaria_em_efetivada_old
@@ -20,16 +20,16 @@ FROM
     LEFT JOIN (
         SELECT *
         FROM d2dbanking_core_eb_operacao_bancaria_em_efetivada_old
-    ) eb
-        ON cco.idArchSagaOperation = eb.idArchSagaOperation
+    ) eb ON cco.idArchSagaOperation = eb.idArchSagaOperation 
         AND cco.cdColigada = eb.cdColigada
         AND cco.cdAgencia = eb.cdAgencia
         AND CAST(cco.nuConta AS BIGINT) = CAST(eb.nuConta AS BIGINT)
     LEFT JOIN (
         SELECT *
         FROM d2dbanking_core_cc_operacao_bancaria_em_efetivada_old
-    ) cc
-        ON cco.idArchSagaOperation = cc.idArchSagaOperation
+    ) cc ON cco.idArchSagaOperation = cc.idArchSagaOperation 
         AND cco.cdColigada = cc.cdColigada
         AND cco.cdAgencia = cc.cdAgencia
-        AND CAST(cco.nuConta AS BIGINT) = CAST(cc.nuConta AS BIGINT);
+        AND CAST(cco.nuConta AS BIGINT) = CAST(cc.nuConta AS BIGINT)
+WHERE 
+    cco.flContaMigrada = 'S'
