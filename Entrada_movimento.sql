@@ -13,22 +13,23 @@ SELECT
     cc.ingestionTime AS "cc_ingestionTime"
 FROM
     (
-        SELECT * FROM d2dbanking_core_cco_operacao_bancaria_em_efetivada_old
+        SELECT *
+        FROM d2dbanking_core_cco_operacao_bancaria_em_efetivada_old
         WHERE flContaMigrada = 'S'
     ) cco
     LEFT JOIN (
-        SELECT idArchSagaOperation, cdColigada, cdAgencia, CAST(nuConta AS BIGINT) AS nuConta, movimento_valorMovimento, ingestionTime
+        SELECT *
         FROM d2dbanking_core_eb_operacao_bancaria_em_efetivada_old
     ) eb
         ON cco.idArchSagaOperation = eb.idArchSagaOperation
         AND cco.cdColigada = eb.cdColigada
         AND cco.cdAgencia = eb.cdAgencia
-        AND CAST(cco.nuConta AS BIGINT) = eb.nuConta
+        AND CAST(cco.nuConta AS BIGINT) = CAST(eb.nuConta AS BIGINT)
     LEFT JOIN (
-        SELECT idArchSagaOperation, cdColigada, cdAgencia, CAST(nuConta AS BIGINT) AS nuConta, movimento_valorMovimento, ingestionTime
+        SELECT *
         FROM d2dbanking_core_cc_operacao_bancaria_em_efetivada_old
     ) cc
         ON cco.idArchSagaOperation = cc.idArchSagaOperation
         AND cco.cdColigada = cc.cdColigada
         AND cco.cdAgencia = cc.cdAgencia
-        AND CAST(cco.nuConta AS BIGINT) = cc.nuConta;
+        AND CAST(cco.nuConta AS BIGINT) = CAST(cc.nuConta AS BIGINT);
