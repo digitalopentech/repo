@@ -32,6 +32,7 @@ cache:
 setup:
   stage: setup
   script:
+    - poetry env use $PYTHON_VERSION_CICD  # Certificando que Poetry usa o Python 3.10.8
     - poetry install
 
 test:
