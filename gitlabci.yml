@@ -1,16 +1,15 @@
-stages:
-  - setup
-  - test
-  - build
-  - deploy
-
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   PYTHON_VERSION_CICD: "3.10.8"
-  NEXUS_URL: "https://nexus.yourdomain.com"
+  NEXUS_URL: "http://nexus.yourdomain.com"
   NEXUS_REPOSITORY: "your-repository"
   NEXUS_USERNAME: "your-username"
   NEXUS_PASSWORD: "your-password"
+
+include:
+  - project: "plataformas/pipelines/cicd"
+    ref: master
+    file: "interlake/bundle/nexus-wheel-v2/.gitlab-ci.yml"
 
 before_script:
   - apt-get update && apt-get install -y curl git build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl
@@ -23,32 +22,3 @@ before_script:
   - pyenv global $PYTHON_VERSION_CICD
   - export PATH="$HOME/.pyenv/versions/$PYTHON_VERSION_CICD/bin:$PATH"
   - python --version
-  - pip install poetry
-
-cache:
-  paths:
-    - .cache/pip
-
-setup:
-  stage: setup
-  script:
-    - poetry env use $PYTHON_VERSION_CICD  # Certificando que Poetry usa o Python 3.10.8
-    - poetry install
-
-test:
-  stage: test
-  script:
-    - poetry run pytest
-
-build:
-  stage: build
-  script:
-    - poetry build
-
-deploy:
-  stage: deploy
-  script:
-    - pip install twine
-    - poetry publish --repository $NEXUS_REPOSITORY -u $NEXUS_USERNAME -p $NEXUS_PASSWORD
-  only:
-    - main
