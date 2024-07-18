@@ -21,6 +21,7 @@ before_script:
   - eval "$(pyenv virtualenv-init -)"
   - pyenv install $PYTHON_VERSION_CICD
   - pyenv global $PYTHON_VERSION_CICD
+  - export PATH="$HOME/.pyenv/versions/$PYTHON_VERSION_CICD/bin:$PATH"
   - python --version
   - pip install poetry
 
