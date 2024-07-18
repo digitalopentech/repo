@@ -1,0 +1,52 @@
+stages:
+  - setup
+  - test
+  - build
+  - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PYTHON_VERSION_CICD: "3.10.8"
+  NEXUS_URL: "https://nexus.yourdomain.com"
+  NEXUS_REPOSITORY: "your-repository"
+  NEXUS_USERNAME: "your-username"
+  NEXUS_PASSWORD: "your-password"
+
+before_script:
+  - apt-get update && apt-get install -y curl git build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl
+  - curl https://pyenv.run | bash
+  - export PATH="$HOME/.pyenv/bin:$PATH"
+  - eval "$(pyenv init --path)"
+  - eval "$(pyenv init -)"
+  - eval "$(pyenv virtualenv-init -)"
+  - pyenv install $PYTHON_VERSION_CICD
+  - pyenv global $PYTHON_VERSION_CICD
+  - python --version
+  - pip install poetry
+
+cache:
+  paths:
+    - .cache/pip
+
+setup:
+  stage: setup
+  script:
+    - poetry install
+
+test:
+  stage: test
+  script:
+    - poetry run pytest
+
+build:
+  stage: build
+  script:
+    - poetry build
+
+deploy:
+  stage: deploy
+  script:
+    - pip install twine
+    - poetry publish --repository $NEXUS_REPOSITORY -u $NEXUS_USERNAME -p $NEXUS_PASSWORD
+  only:
+    - main
