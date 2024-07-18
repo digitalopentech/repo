@@ -1,23 +1,52 @@
-[tool.poetry]
-name = "seu-projeto"
-version = "0.1.0"
-description = ""
-authors = ["Seu Nome <seuemail@example.com>"]
+stages:
+  - setup
+  - test
+  - build
+  - deploy
 
-[tool.poetry.dependencies]
-python = "^3.10"
-python-dotenv = "~1.0.1"
-confluent-kafka = {version = "~2.4.0", extras = ["avro"]}
-proto-schema-parser = "~1.3.3"
-urllib3 = "~2.0.7"
-trino = "~0.328.0"
-boto3 = "~1.34.113"
-kafka-python-ng = "~2.2.2"
-lz4 = "~4.3.3"
-SQLAlchemy = "2.0.30"
-sqlalchemy-mixins = "2.0.5"
-mysql-connector-python = "8.4.0"
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PYTHON_VERSION_CICD: "3.10.8"
+  NEXUS_URL: "https://nexus.yourdomain.com"
+  NEXUS_REPOSITORY: "your-repository"
+  NEXUS_USERNAME: "your-username"
+  NEXUS_PASSWORD: "your-password"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+before_script:
+  - apt-get update && apt-get install -y curl git build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl
+  - curl https://pyenv.run | bash
+  - export PATH="$HOME/.pyenv/bin:$PATH"
+  - eval "$(pyenv init --path)"
+  - eval "$(pyenv init -)"
+  - eval "$(pyenv virtualenv-init -)"
+  - pyenv install $PYTHON_VERSION_CICD
+  - pyenv global $PYTHON_VERSION_CICD
+  - python --version
+  - pip install poetry
+
+cache:
+  paths:
+    - .cache/pip
+
+setup:
+  stage: setup
+  script:
+    - poetry install
+
+test:
+  stage: test
+  script:
+    - poetry run pytest
+
+build:
+  stage: build
+  script:
+    - poetry build
+
+deploy:
+  stage: deploy
+  script:
+    - pip install twine
+    - poetry publish --repository $NEXUS_REPOSITORY -u $NEXUS_USERNAME -p $NEXUS_PASSWORD
+  only:
+    - main
