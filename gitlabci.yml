@@ -6,19 +6,17 @@ include:
     ref: master
     file: "interlake/bundle/nexus-wheel-v2/.gitlab-ci.yml"
 
-# Caso precise adicionar mais configurações específicas, pode incluir abaixo
+# Defina os estágios necessários se não estiverem no arquivo incluído
 stages:
+  - .pre
   - build
+  - .post
 
-# Definindo uma variável para o cache do pip
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-
-# Etapas antes do script principal
+# Adicione aqui as etapas específicas se necessário
 before_script:
   - pip install --upgrade pip poetry
 
-# Job para build
+# Job para build, caso precise de personalização adicional
 build:
   stage: build
   script:
