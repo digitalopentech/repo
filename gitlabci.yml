@@ -1,24 +1,29 @@
 variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PYTHON_VERSION_CICD: "3.10.8"
-  NEXUS_URL: "http://nexus.yourdomain.com"
-  NEXUS_REPOSITORY: "your-repository"
-  NEXUS_USERNAME: "your-username"
-  NEXUS_PASSWORD: "your-password"
+  PYTHON_VERSION_CICD: "3.9"
 
 include:
-  - project: "plataformas/pipelines/cicd"
+  - project: "Plataformas/pipelines/cicd"
     ref: master
     file: "interlake/bundle/nexus-wheel-v2/.gitlab-ci.yml"
 
+# Caso precise adicionar mais configurações específicas, pode incluir abaixo
+stages:
+  - build
+
+# Definindo uma variável para o cache do pip
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# Etapas antes do script principal
 before_script:
-  - apt-get update && apt-get install -y curl git build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl
-  - curl https://pyenv.run | bash
-  - export PATH="$HOME/.pyenv/bin:$PATH"
-  - eval "$(pyenv init --path)"
-  - eval "$(pyenv init -)"
-  - eval "$(pyenv virtualenv-init -)"
-  - pyenv install $PYTHON_VERSION_CICD
-  - pyenv global $PYTHON_VERSION_CICD
-  - export PATH="$HOME/.pyenv/versions/$PYTHON_VERSION_CICD/bin:$PATH"
-  - python --version
+  - pip install --upgrade pip poetry
+
+# Job para build
+build:
+  stage: build
+  script:
+    - poetry install
+    - poetry build
+  artifacts:
+    paths:
+      - dist/
