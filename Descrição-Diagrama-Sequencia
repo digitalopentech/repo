@@ -1,0 +1,195 @@
+para um processo altamente resiliente, incluindo tratamento de erros, retries, uso de dead-letter queues (DLQ) para mensagens que falham após múltiplas tentativas, e outras considerações para garantir a robustez do sistema:
+
+```plantuml
+@startuml
+actor DedeUI
+participant "Kafka: request_topic" as KafkaRequest
+participant "Kafka: response_topic" as KafkaResponse
+participant "Kafka: error_topic" as KafkaError
+participant Microservice
+participant "GitLab"
+participant "Apache Pinot" as Pinot
+participant "DLQ (Dead Letter Queue)" as DLQ
+
+== Formulário de Criação (Create Form) ==
+DedeUI -> KafkaRequest: Post create request
+KafkaRequest -> Microservice: Consume create request
+Microservice -> Microservice: Generate table-config.json and table-schema.json
+
+alt Success on JSON Generation
+    Microservice -> GitLab: Create branch and commit JSON files
+    GitLab --> Microservice: Branch and commit created
+    Microservice -> KafkaResponse: Post awaiting approval
+    KafkaResponse -> DedeUI: Notify awaiting approval
+else Failure on JSON Generation
+    Microservice -> KafkaError: Post error (creation failure)
+    KafkaError -> DedeUI: Notify error
+end
+
+== Formulário de Alteração (Update Form) ==
+DedeUI -> KafkaRequest: Post update request
+KafkaRequest -> Microservice: Consume update request
+Microservice -> Microservice: Generate updated JSON files
+
+alt Success on JSON Update
+    Microservice -> GitLab: Commit updated JSON files to branch
+    GitLab --> Microservice: Branch updated with new commit
+    Microservice -> KafkaResponse: Post update notification
+    KafkaResponse -> DedeUI: Notify update processed
+else Failure on JSON Update
+    Microservice -> KafkaError: Post error (update failure)
+    KafkaError -> DedeUI: Notify error
+end
+
+== Formulário de Aprovação (Approval Form) ==
+actor Admin as Administrator
+Administrator -> DedeUI: Approve via form
+DedeUI -> KafkaRequest: Post approval request
+KafkaRequest -> Microservice: Consume approval request
+
+alt Success in Pinot Processing
+    Microservice -> Pinot: Create or update table in Apache Pinot
+    Pinot --> Microservice: Table created/updated
+    Microservice -> GitLab: Create merge request and approve
+    GitLab --> Microservice: MR to master created and approved
+    Microservice -> KafkaResponse: Post success
+    KafkaResponse -> DedeUI: Notify success
+else Failure in Pinot Processing
+    Microservice -> KafkaError: Post error (Pinot processing failure)
+    KafkaError -> DedeUI: Notify error
+    Microservice -> DLQ: Send message to DLQ after retries
+    DLQ --> Microservice: Message stored in DLQ for manual processing
+end
+
+== Handling Retries and Errors ==
+alt Temporary Failure
+    Microservice -> Microservice: Retry with backoff (up to 3 times)
+else Permanent Failure
+    Microservice -> KafkaError: Post error after retries
+    Microservice -> DLQ: Send message to DLQ
+    DLQ --> Microservice: Message stored in DLQ for manual processing
+end
+
+@enduml
+```
+
+### Explicação do Fluxo Resiliente:
+
+#### **Formulário de Criação (Create Form):**
+1. **DedeUI -> KafkaRequest: Post create request**
+   - O DedeUI envia uma solicitação para criar os arquivos JSON para o `request_topic` do Kafka.
+
+2. **KafkaRequest -> Microservice: Consume create request**
+   - O microserviço consome a solicitação de criação do `request_topic`.
+
+3. **Microservice -> Microservice: Generate table-config.json and table-schema.json**
+   - O microserviço tenta gerar os arquivos `table-config.json` e `table-schema.json`.
+
+4. **alt Success on JSON Generation**
+   - **Se o microserviço gerar os arquivos JSON com sucesso:**
+     - **Microservice -> GitLab: Create branch and commit JSON files**
+       - Os arquivos JSON são comitados em uma nova branch no GitLab.
+     - **GitLab --> Microservice: Branch and commit created**
+       - O GitLab confirma que a branch foi criada e os arquivos foram comitados.
+     - **Microservice -> KafkaResponse: Post awaiting approval**
+       - O microserviço posta uma mensagem de "aguardando aprovação" no `response_topic`.
+     - **KafkaResponse -> DedeUI: Notify awaiting approval**
+       - O DedeUI é notificado que a solicitação está aguardando aprovação.
+   - **else Failure on JSON Generation**
+     - **Se o microserviço falhar na geração dos arquivos JSON:**
+       - **Microservice -> KafkaError: Post error (creation failure)**
+         - O microserviço posta uma mensagem de erro no `error_topic`.
+       - **KafkaError -> DedeUI: Notify error**
+         - O DedeUI é notificado sobre o erro.
+
+#### **Formulário de Alteração (Update Form):**
+5. **DedeUI -> KafkaRequest: Post update request**
+   - O DedeUI envia uma solicitação de atualização para o `request_topic` com base no formulário de alteração.
+
+6. **KafkaRequest -> Microservice: Consume update request**
+   - O microserviço consome a solicitação de atualização do `request_topic`.
+
+7. **Microservice -> Microservice: Generate updated JSON files**
+   - O microserviço tenta gerar os arquivos JSON atualizados.
+
+8. **alt Success on JSON Update**
+   - **Se o microserviço gerar os arquivos JSON atualizados com sucesso:**
+     - **Microservice -> GitLab: Commit updated JSON files to branch**
+       - Os arquivos JSON atualizados são comitados na mesma branch do GitLab.
+     - **GitLab --> Microservice: Branch updated with new commit**
+       - O GitLab confirma que a branch foi atualizada.
+     - **Microservice -> KafkaResponse: Post update notification**
+       - O microserviço posta uma notificação no `response_topic` sobre o sucesso da atualização.
+     - **KafkaResponse -> DedeUI: Notify update processed**
+       - O DedeUI é notificado sobre a atualização processada.
+   - **else Failure on JSON Update**
+     - **Se o microserviço falhar na atualização dos arquivos JSON:**
+       - **Microservice -> KafkaError: Post error (update failure)**
+         - O microserviço posta uma mensagem de erro no `error_topic`.
+       - **KafkaError -> DedeUI: Notify error**
+         - O Dede
+
+Claro, continuando com a explicação do fluxo resiliente:
+
+#### **Formulário de Alteração (Update Form) - Continuação:**
+   - **else Failure on JSON Update**
+     - **Se o microserviço falhar na atualização dos arquivos JSON:**
+       - **Microservice -> KafkaError: Post error (update failure)**
+         - O microserviço posta uma mensagem de erro no `error_topic`, indicando que houve uma falha na atualização dos arquivos JSON.
+       - **KafkaError -> DedeUI: Notify error**
+         - O DedeUI é notificado sobre o erro ocorrido durante a tentativa de atualização.
+
+#### **Formulário de Aprovação (Approval Form):**
+9. **Administrator -> DedeUI: Approve via form**
+   - O administrador revisa e aprova a solicitação usando o formulário de aprovação no DedeUI.
+   - **DedeUI -> KafkaRequest: Post approval request**
+     - Após a aprovação, o DedeUI envia uma solicitação de aprovação para o `request_topic`.
+
+10. **KafkaRequest -> Microservice: Consume approval request**
+    - O microserviço consome a solicitação de aprovação do `request_topic`.
+
+11. **Microservice -> Pinot: Create or update table in Apache Pinot**
+    - O microserviço tenta criar ou atualizar a tabela no Apache Pinot de acordo com a solicitação aprovada.
+    - **Pinot --> Microservice: Table created/updated**
+      - O Apache Pinot confirma que a tabela foi criada ou atualizada com sucesso.
+
+### **Finalização do Processo:**
+12. **alt Success in Pinot Processing**
+    - **Se o processamento no Apache Pinot for bem-sucedido:**
+      - **Microservice -> GitLab: Create merge request and approve**
+        - O microserviço cria um merge request da branch atualizada para a `master` no GitLab e aprova automaticamente o merge.
+      - **GitLab --> Microservice: MR to master created and approved**
+        - O GitLab confirma que o merge request foi criado e aprovado, e que a branch foi mesclada na `master`.
+      - **Microservice -> KafkaResponse: Post success**
+        - O microserviço posta uma mensagem de sucesso no `response_topic`.
+      - **KafkaResponse -> DedeUI: Notify success**
+        - O DedeUI é notificado do sucesso da operação.
+
+13. **else Failure in Pinot Processing**
+    - **Se o processamento no Apache Pinot falhar:**
+      - **Microservice -> KafkaError: Post error (Pinot processing failure)**
+        - O microserviço posta uma mensagem de erro no `error_topic`, indicando que houve uma falha durante o processamento no Apache Pinot.
+      - **KafkaError -> DedeUI: Notify error**
+        - O DedeUI é notificado sobre o erro ocorrido durante o processamento no Apache Pinot.
+      - **Microservice -> DLQ: Send message to DLQ after retries**
+        - Após várias tentativas (retries) falhadas, o microserviço envia a mensagem para uma Dead Letter Queue (DLQ) para processamento manual ou investigação posterior.
+      - **DLQ --> Microservice: Message stored in DLQ for manual processing**
+        - A mensagem é armazenada na DLQ, sinalizando que necessita de intervenção manual.
+
+### **Handling Retries and Errors (Tratamento de Retries e Erros):**
+14. **alt Temporary Failure**
+    - **Se ocorrer uma falha temporária durante qualquer parte do processo:**
+      - **Microservice -> Microservice: Retry with backoff (up to 3 times)**
+        - O microserviço tenta reprocessar a solicitação com um esquema de backoff exponencial, até um máximo de 3 vezes.
+
+15. **else Permanent Failure**
+    - **Se o problema persistir após os retries:**
+      - **Microservice -> KafkaError: Post error after retries**
+        - O microserviço posta uma mensagem de erro no `error_topic` após esgotar as tentativas.
+      - **Microservice -> DLQ: Send message to DLQ**
+        - A mensagem problemática é movida para a Dead Letter Queue (DLQ).
+      - **DLQ --> Microservice: Message stored in DLQ for manual processing**
+        - A mensagem é armazenada na DLQ, onde aguardará processamento manual ou análise adicional.
+
+### **Resumo:**
+Este diagrama agora inclui mecanismos robustos de resiliência, como tratamento de erros e retries, que garantem que as operações possam se recuperar de falhas temporárias e que falhas permanentes sejam corretamente isoladas e registradas para intervenção manual. Isso garante que o sistema possa lidar de maneira eficaz com problemas imprevistos, minimizando a possibilidade de falhas não tratadas e garantindo que as operações críticas sejam concluídas com sucesso ou adequadamente escaladas para resolução manual.
