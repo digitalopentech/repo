@@ -1,0 +1,20 @@
+@startuml
+actor DedeUI
+participant "Kafka: request_topic" as KafkaRequest
+participant "Kafka: response_topic" as KafkaResponse
+participant "Kafka: error_topic" as KafkaError
+participant Airflow
+
+DedeUI -> KafkaRequest: Post request
+KafkaRequest -> Airflow: Trigger DAG
+Airflow -> Airflow: Process with pinot-utils
+
+alt Success
+    Airflow -> KafkaResponse: Post success
+    KafkaResponse -> DedeUI: Consume response
+else Failure after retries
+    Airflow -> KafkaError: Post error
+    KafkaError -> DedeUI: Notify error
+end
+
+@enduml
