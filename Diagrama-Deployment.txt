@@ -1,0 +1,39 @@
+@startuml
+node "DedeUI Server" {
+  [DedeUI] 
+}
+
+node "Kafka Cluster" {
+  [Kafka: request_topic]
+  [Kafka: response_topic]
+  [Kafka: error_topic]
+}
+
+node "Microservice Server" {
+  [Microservice]
+}
+
+node "GitLab Server" {
+  [GitLab]
+}
+
+node "Apache Pinot Cluster" {
+  [Apache Pinot]
+}
+
+node "Dead Letter Queue" {
+  [DLQ]
+}
+
+DedeUI -down-> [Kafka: request_topic] : Post requests
+[Kafka: request_topic] -down-> [Microservice] : Consume requests
+[Microservice] -down-> [GitLab] : Commit JSON files
+[Microservice] -down-> [Apache Pinot] : Create/Update table
+[Kafka: response_topic] <-left- [Microservice] : Post success
+[Kafka: error_topic] <-left- [Microservice] : Post errors
+[DLQ] <-left- [Microservice] : Send to DLQ after retries
+[Kafka: response_topic] <-up- [DedeUI] : Consume responses
+[Kafka: error_topic] <-up- [DedeUI] : Consume errors
+[DLQ] <-down- [Microservice] : Store unprocessed messages
+
+@enduml
