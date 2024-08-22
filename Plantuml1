@@ -1,67 +1,70 @@
-Aqui está o diagrama de sequência atualizado, incorporando a lógica onde o microserviço só cria a branch e o merge request no GitLab após o sucesso completo do processo de criação da tabela no Apache Pinot:
-
-```plantuml
-@startuml
+ @startuml
 actor DedeUI
 participant "Kafka: request_topic" as KafkaRequest
 participant "Kafka: response_topic" as KafkaResponse
 participant "Kafka: error_topic" as KafkaError
 participant Microservice
-participant "Apache Pinot" as Pinot
 participant "GitLab"
+participant "Apache Pinot" as Pinot
+participant "DLQ (Dead Letter Queue)" as DLQ
 
-DedeUI -> KafkaRequest: Post request
-KafkaRequest -> Microservice: Consume request
-Microservice -> Microservice: Process request
+== Formulário de Criação (Create Form) ==
+DedeUI -> KafkaRequest: Post create request
+KafkaRequest -> Microservice: Consume create request
+Microservice -> Microservice: Generate table-config.json and table-schema.json
 
-Microservice -> Pinot: Create table
-Pinot --> Microservice: Table created
-
-alt Success in Pinot
-    Microservice -> GitLab: Create branch and merge request
-    GitLab --> Microservice: Branch and MR created
-    Microservice -> KafkaResponse: Post success
-    KafkaResponse -> DedeUI: Consume response
-else Failure in Pinot
-    Microservice -> KafkaError: Post error
+alt Success on JSON Generation
+    Microservice -> GitLab: Create branch and commit JSON files
+    GitLab --> Microservice: Branch and commit created
+    Microservice -> KafkaResponse: Post awaiting approval
+    KafkaResponse -> DedeUI: Notify awaiting approval
+else Failure on JSON Generation
+    Microservice -> KafkaError: Post error (creation failure)
     KafkaError -> DedeUI: Notify error
 end
+
+== Formulário de Alteração (Update Form) ==
+DedeUI -> KafkaRequest: Post update request
+KafkaRequest -> Microservice: Consume update request
+Microservice -> Microservice: Generate updated JSON files
+
+alt Success on JSON Update
+    Microservice -> GitLab: Commit updated JSON files to branch
+    GitLab --> Microservice: Branch updated with new commit
+    Microservice -> KafkaResponse: Post update notification
+    KafkaResponse -> DedeUI: Notify update processed
+else Failure on JSON Update
+    Microservice -> KafkaError: Post error (update failure)
+    KafkaError -> DedeUI: Notify error
+end
+
+== Formulário de Aprovação (Approval Form) ==
+actor Admin as Administrator
+Administrator -> DedeUI: Approve via form
+DedeUI -> KafkaRequest: Post approval request
+KafkaRequest -> Microservice: Consume approval request
+
+alt Success in Pinot Processing
+    Microservice -> Pinot: Create or update table in Apache Pinot
+    Pinot --> Microservice: Table created/updated
+    Microservice -> GitLab: Create merge request and approve
+    GitLab --> Microservice: MR to master created and approved
+    Microservice -> KafkaResponse: Post success
+    KafkaResponse -> DedeUI: Notify success
+else Failure in Pinot Processing
+    Microservice -> KafkaError: Post error (Pinot processing failure)
+    KafkaError -> DedeUI: Notify error
+    Microservice -> DLQ: Send message to DLQ after retries
+    DLQ --> Microservice: Message stored in DLQ for manual processing
+end
+
+== Handling Retries and Errors ==
+alt Temporary Failure
+    Microservice -> Microservice: Retry with backoff (up to 3 times)
+else Permanent Failure
+    Microservice -> KafkaError: Post error after retries
+    Microservice -> DLQ: Send message to DLQ
+    DLQ --> Microservice: Message stored in DLQ for manual processing
+end
+
 @enduml
-```
-
-### Explicação do Fluxo Atualizado:
-
-1. **DedeUI -> KafkaRequest: Post request**
-   - O DedeUI envia uma solicitação para o `request_topic` do Kafka.
-
-2. **KafkaRequest -> Microservice: Consume request**
-   - O microserviço consome a solicitação do `request_topic`.
-
-3. **Microservice -> Microservice: Process request**
-   - O microserviço começa a processar a solicitação internamente.
-
-4. **Microservice -> Pinot: Create table**
-   - O microserviço faz uma chamada ao Apache Pinot para criar a tabela conforme a solicitação.
-   - **Pinot --> Microservice: Table created**
-     - O Apache Pinot responde confirmando que a tabela foi criada com sucesso.
-
-5. **alt Success in Pinot**
-   - **Condição:** Se a tabela for criada com sucesso no Apache Pinot:
-   - **Microservice -> GitLab: Create branch and merge request**
-     - O microserviço procede com a criação da branch e do merge request no GitLab.
-     - **GitLab --> Microservice: Branch and MR created**
-       - O GitLab responde confirmando que a branch e o merge request foram criados.
-   - **Microservice -> KafkaResponse: Post success**
-     - Após a confirmação do GitLab, o microserviço posta uma mensagem de sucesso no `response_topic`.
-   - **KafkaResponse -> DedeUI: Consume response**
-     - O DedeUI consome a mensagem de sucesso e atualiza o status da operação.
-
-6. **else Failure in Pinot**
-   - **Condição:** Se a criação da tabela no Apache Pinot falhar:
-   - **Microservice -> KafkaError: Post error**
-     - O microserviço posta uma mensagem de erro no `error_topic` sem tentar criar a branch ou merge request no GitLab.
-   - **KafkaError -> DedeUI: Notify error**
-     - O DedeUI consome a mensagem de erro para notificar o usuário sobre a falha.
-
-### Resumo:
-Neste fluxo, o microserviço só procede para criar a branch e o merge request no GitLab se o processo de criação da tabela no Apache Pinot for bem-sucedido. Isso garante que o código relacionado só seja versionado e revisado após a confirmação de que o passo mais crítico (criação da tabela) foi concluído com sucesso. Em caso de falha no Pinot, o fluxo é interrompido, e uma mensagem de erro é gerada para tratamento.
