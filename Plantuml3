@@ -1,0 +1,20 @@
+@startuml
+actor DedeUI
+participant "SQS: request_queue" as SQSRequest
+participant "SQS: response_queue" as SQSResponse
+participant "SQS: error_queue" as SQSError
+participant Lambda
+
+DedeUI -> SQSRequest: Post request
+SQSRequest -> Lambda: Trigger Lambda
+Lambda -> Lambda: Process with pinot-utils
+
+alt Success
+    Lambda -> SQSResponse: Post success
+    SQSResponse -> DedeUI: Consume response
+else Failure after retries
+    Lambda -> SQSError: Post error
+    SQSError -> DedeUI: Notify error
+end
+
+@enduml
